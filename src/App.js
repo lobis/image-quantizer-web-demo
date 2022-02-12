@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useRef, useEffect} from "react"
+import React, {useCallback, useEffect, useRef, useState} from "react"
 
 import "./App.css";
 
@@ -13,11 +13,15 @@ const App = () => {
     const [referenceWidth, referenceHeight] = [600, 448]
 
     const [image, setImage] = useState(null)
-    const [imageName, setImageName] = useState(null)
-    const [imageHash, setImageHash] = useState(null)
+    const [imageName, setImageName] = useState("")
+    const [imageHash, setImageHash] = useState("")
+
+    const [cropImageBase64, setCropImageBase64] = useState("")
+    const [responseImageBase64, setResponseImageBase64] = useState("")
 
     const imageRef = useRef(null)
     const previewCropCanvasRef = useRef(null)
+    const responseQuantizedCanvasRef = useRef(null)
     const inputRef = useRef(null)
 
     const onImageLoad = useCallback((img) => {
@@ -28,8 +32,8 @@ const App = () => {
     const [completedCrop, setCompletedCrop] = useState(null)
 
     const onSelectFile = (e) => {
-        console.log("FILE SELECTED!")
         if (e.target.files && e.target.files.length > 0) {
+            // probably there is a better way to do this
             {
                 const reader = new FileReader()
                 reader.addEventListener("load", () => setImage(reader.result))
@@ -40,27 +44,37 @@ const App = () => {
             {
                 const reader = new FileReader()
                 // https://stackoverflow.com/questions/28437181/md5-hash-of-a-file-using-javascript
-                reader.addEventListener(
-                    "load",
-                    () => {
-                        const wordArray = CryptoJS.lib.WordArray.create(reader.result)
-                        setImageHash(CryptoJS.MD5(wordArray).toString())
-                    }
-                )
+                reader.addEventListener("load", () => {
+                    const wordArray = CryptoJS.lib.WordArray.create(reader.result)
+                    setImageHash(CryptoJS.MD5(wordArray).toString())
+                })
 
                 reader.readAsArrayBuffer(e.target.files[0])
             }
         }
     }
 
-    useEffect(() => {
-        if (!inputRef.current) {
-            return
-        }
-        const input = inputRef.current
-        console.log(input)
-        // input.
-    }, [inputRef])
+    const submitImage = () => {
+        fetch("http://127.0.0.1:5000" + "/quantize", {
+            method: "POST", body: JSON.stringify({
+                name: imageName, hash: imageHash, image: cropImageBase64
+            }), headers: {
+                "Content-type": "application/json; charset=UTF-8", // "Access-Control-Allow-Origin": "*"
+            }
+        }).then(response => response.json())
+            .then(json => {
+                // console.log(json)
+                const quantizedImage = json["quantized"];
+                const name = json["name"]
+                const hash = json["hash"]
+                setResponseImageBase64(quantizedImage)
+                console.log("received quantized image ", name)
+                // console.log(quantizedImage)
+            })
+            .catch(err => console.log(err))
+
+    }
+
 
     useEffect(() => {
         if (!completedCrop || !previewCropCanvasRef.current || !imageRef.current) {
@@ -92,24 +106,31 @@ const App = () => {
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
         ctx.imageSmoothingQuality = "high"
 
-        ctx.drawImage(
-            image,
-            crop.x * scaleX,
-            crop.y * scaleY,
-            crop.width * scaleX,
-            crop.height * scaleY,
-            0,
-            0,
-            crop.width * scaleX,
-            crop.height * scaleY
-        )
+        ctx.drawImage(image, crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY, 0, 0, crop.width * scaleX, crop.height * scaleY)
 
-        // setCropImageBase64(canvas.toDataURL("image/png"))
+        setCropImageBase64(canvas.toDataURL("image/png"))
 
     }, [completedCrop])
 
-    return (
-        <div className="App">
+    useEffect(() => {
+        console.log("updating response image")
+        if (!responseImageBase64 || !responseQuantizedCanvasRef.current) {
+            return
+        }
+
+        const canvas = responseQuantizedCanvasRef.current
+
+        const ctx = canvas.getContext("2d")
+
+        const image = new Image()
+        image.onload = () => {
+            ctx.drawImage(image, 0, 0)
+        }
+        image.src = responseImageBase64
+
+    }, [responseImageBase64])
+
+    return (<div className="App">
             <header className="App-header">
                 <p>
                     {imageHash}
@@ -137,16 +158,35 @@ const App = () => {
                     }}
                 />
 
+
+                <button className="button-submit"
+                        type="button"
+                        disabled={!completedCrop?.width || !completedCrop?.height}
+                        onClick={submitImage}
+                >
+                    Submit
+                </button>
+
                 <div>
                     <p>
                         Crop Preview
                     </p>
-                    <canvas className="crop-image"
-                            ref={previewCropCanvasRef}
+                    <canvas ref={previewCropCanvasRef}
                             style={{
                                 width: "40%"
                                 // width: referenceWidth,
                                 // height: referenceHeight
+                            }}
+                    />
+                </div>
+
+                <div>
+                    <p>
+                        Response Preview
+                    </p>
+                    <canvas ref={responseQuantizedCanvasRef}
+                            style={{
+                                width: "40%"
                             }}
                     />
                 </div>
