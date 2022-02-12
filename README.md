@@ -1,3 +1,3 @@
 # Image Quantizer Web Demo
 
-Web demo for this (https://github.com/lobis/image-quantizer)[image-quantizer] implementation.
+Web demo for [image-quantizer](https://github.com/lobis/image-quantizer).
