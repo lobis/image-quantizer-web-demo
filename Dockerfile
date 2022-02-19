@@ -23,7 +23,6 @@ RUN pip install --index-url https://test.pypi.org/simple/ image-quantizer
 
 EXPOSE 5000
 
-COPY .env ./.env
 COPY server/ ./server/
 
 COPY --from=build-client /app/dist /app/dist
