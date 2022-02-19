@@ -1,3 +1,4 @@
+python-dotenv
 flask
 flask-cors
 
@@ -5,3 +6,5 @@ Pillow
 
 pytest
 pytest-flask
+
+# image_quantizer

@@ -7,7 +7,6 @@ import "react-image-crop/dist/ReactCrop.css"
 
 import CryptoJS from "crypto-js"
 
-
 const App = () => {
 
     const [referenceWidth, referenceHeight] = [600, 448]
@@ -63,13 +62,10 @@ const App = () => {
             }
         }).then(response => response.json())
             .then(json => {
-                // console.log(json)
                 const quantizedImage = json["quantized"];
                 const name = json["name"]
-                const hash = json["hash"]
                 setResponseImageBase64(quantizedImage)
                 console.log("received quantized image ", name)
-                // console.log(quantizedImage)
             })
             .catch(err => console.log(err))
 
@@ -93,16 +89,6 @@ const App = () => {
         canvas.width = crop.width * pixelRatio * scaleX
         canvas.height = crop.height * pixelRatio * scaleY
 
-        /*
-        const cropPositionRelLeft = crop.x / (image.naturalWidth / scaleX)
-        const cropPositionRelRight = cropPositionRelLeft + crop.width / (image.naturalWidth / scaleX)
-        const cropPositionRelTop = crop.y / (image.naturalHeight / scaleY)
-        const cropPositionRelBottom = cropPositionRelTop + crop.height / (image.naturalHeight / scaleY)
-
-        console.log(cropPositionRelLeft, cropPositionRelRight)
-        console.log(cropPositionRelTop, cropPositionRelBottom)
-        */
-
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
         ctx.imageSmoothingQuality = "high"
 
@@ -120,6 +106,9 @@ const App = () => {
 
         const canvas = responseQuantizedCanvasRef.current
 
+        canvas.width = previewCropCanvasRef.current.width
+        canvas.height = previewCropCanvasRef.current.height
+
         const ctx = canvas.getContext("2d")
 
         const image = new Image()
@@ -132,9 +121,6 @@ const App = () => {
 
     return (<div className="App">
             <header className="App-header">
-                <p>
-                    {imageHash}
-                </p>
 
                 <div>
                     <input type="file" accept="image/*" onChange={onSelectFile}
@@ -154,7 +140,7 @@ const App = () => {
                     }}
                     style={{
                         // maxWidth: referenceWidth,
-                        maxWidth: "40%"
+                        maxWidth: "50%"
                     }}
                 />
 
@@ -167,30 +153,31 @@ const App = () => {
                     Submit
                 </button>
 
-                <div>
-                    <p>
-                        Crop Preview
-                    </p>
-                    <canvas ref={previewCropCanvasRef}
-                            style={{
-                                width: "40%"
-                                // width: referenceWidth,
-                                // height: referenceHeight
-                            }}
-                    />
-                </div>
+                <div className="out-container">
+                    <div className="out-image">
+                        <p>
+                            Crop Preview
+                        </p>
+                        <canvas ref={previewCropCanvasRef}
+                                style={{
+                                    width: "100%"
+                                    // width: referenceWidth,
+                                    // height: referenceHeight
+                                }}
+                        />
+                    </div>
 
-                <div>
-                    <p>
-                        Response Preview
-                    </p>
-                    <canvas ref={responseQuantizedCanvasRef}
-                            style={{
-                                width: "40%"
-                            }}
-                    />
+                    <div className="out-image">
+                        <p>
+                            Response Preview
+                        </p>
+                        <canvas ref={responseQuantizedCanvasRef}
+                                style={{
+                                    width: "100%"
+                                }}
+                        />
+                    </div>
                 </div>
-
             </header>
         </div>
     )

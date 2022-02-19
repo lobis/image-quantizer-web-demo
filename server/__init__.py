@@ -1,16 +1,26 @@
-from flask import Flask
-from flask import request
-from flask_cors import CORS
+import image_quantizer
 
 import base64
 import io
+import os
 import re
 
-# import image_quantizer
 from PIL import Image
+from flask import Flask
+from flask import request, send_from_directory
+from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
+
+static = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dist"))
+
+
+@app.route("/", defaults=dict(filename=None))
+@app.route("/<path:filename>", methods=["GET"])
+def index(filename):
+    filename = filename or "index.html"
+    return send_from_directory(static, filename)
 
 
 @app.route("/quantize", methods=["POST"])
@@ -28,20 +38,17 @@ def quantize():
         print(f"Image data: {image_data[:50]}...")
 
         buffered = io.BytesIO(base64.b64decode(image_data, validate=True))
-        image = Image.open(buffered)
+        image = Image.open(buffered).convert("RGB")
+        image = image_quantizer.quantize_image(image, palette=image_quantizer.PALETTES["WAVESHARE-EPD-7COLOR"])
 
-        print(f"Image size: {image.size}")
         # send back
-
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")
-        image_data_out = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        image_data_out = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
         print(f"Image data out: {image_data_out[:50]}...")
 
         return {"name": image_name, "hash": image_hash, "quantized": f"data:image/png;base64,{image_data_out}"}
-
-        # image.show()
 
     except Exception as e:
         print(f"/quantize failed with '{e}'")

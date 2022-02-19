@@ -25,3 +25,5 @@ yarn-error.log*
 # Flask / Python
 __pycache__
 .pytest*
+.idea/
+dist/
